@@ -1,2 +1,3 @@
 # kitespots
-Personal project build with FastAPI
+
+Personal project build with FastAPI, PostgreSQL
