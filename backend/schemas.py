@@ -7,22 +7,28 @@ from pydantic import (
     SecretStr,
 )
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Optional
 
 MIN_PASSWORD_LENGTH = 5
 
 
-class UserCreate(BaseModel):
+class UserBase(BaseModel):
     email: EmailStr
     name: Annotated[str, StringConstraints(strip_whitespace=True)]
+
+
+class UserCreate(UserBase):
     password: str = Field(min_length=MIN_PASSWORD_LENGTH)
 
 
-class UserOut(BaseModel):
+class UserUpdate(UserBase):
+    email: Optional[EmailStr] = None
+    name: Optional[str] = None
+
+
+class UserOut(UserBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    email: EmailStr
-    name: Annotated[str, StringConstraints(strip_whitespace=True)]
     created_at: datetime
     active: bool
 
