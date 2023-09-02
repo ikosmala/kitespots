@@ -10,11 +10,14 @@ from datetime import datetime
 from typing import Annotated, Optional
 
 MIN_PASSWORD_LENGTH = 5
+MIN_NAME_LENGTH = 2
 
 
 class UserBase(BaseModel):
     email: EmailStr
-    name: Annotated[str, StringConstraints(strip_whitespace=True)]
+    name: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=MIN_NAME_LENGTH)
+    ]
 
 
 class UserCreate(UserBase):
