@@ -48,3 +48,4 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     id: int | None = None
+    email: EmailStr | None = None
