@@ -42,7 +42,10 @@ services:
       - db
     networks:
       - backend_network
+    volumes:
+      - pg_admin_data:/var/lib/pgadmin
 volumes:
   postgres_data:
+  pg_admin_data:
 networks:
   backend_network:
