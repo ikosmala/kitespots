@@ -4,8 +4,10 @@ from pydantic import (
     ConfigDict,
     StringConstraints,
     Field,
-    SecretStr,
 )
+from pydantic_extra_types.coordinate import Longitude, Latitude
+from pydantic_extra_types.country import CountryShortName
+
 from datetime import datetime
 from typing import Annotated, Optional
 
@@ -21,7 +23,7 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    password: str = Field(min_length=MIN_PASSWORD_LENGTH)
+    password: str = Field(..., min_length=MIN_PASSWORD_LENGTH)
 
 
 class UserUpdate(UserBase):
@@ -36,11 +38,6 @@ class UserOut(UserBase):
     active: bool
 
 
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: SecretStr = Field(min_length=MIN_PASSWORD_LENGTH)
-
-
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -49,3 +46,32 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     id: int | None = None
     email: EmailStr | None = None
+
+
+class SpotIn(BaseModel):
+    latitude: Latitude  # first - szerokosc
+    longitude: Longitude  # second - dlugosc
+    name: str = Field(..., min_length=2)
+    country: CountryShortName
+
+    # todo: validate latitude and longitude to 14 places after decimal
+
+
+class Spot(SpotIn):
+    id: int
+
+
+class SpotOut(Spot):
+    model_config = ConfigDict(from_attributes=True)
+    pass
+
+
+class SpotUpdate(BaseModel):
+    latitude: Optional[Latitude] = None  # first - szerokosc
+    longitude: Optional[Longitude] = None  # second - dlugosc
+    name: Optional[str] = Field(None, min_length=2)
+    country: Optional[CountryShortName] = None
+
+
+class UserWithSpots(UserOut):
+    spots: Optional[list[SpotOut]]
