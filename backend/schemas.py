@@ -9,7 +9,7 @@ from pydantic_extra_types.coordinate import Longitude, Latitude
 from pydantic_extra_types.country import CountryShortName
 
 from datetime import datetime
-from typing import Annotated, Optional
+from typing import Annotated
 
 MIN_PASSWORD_LENGTH = 5
 MIN_NAME_LENGTH = 2
@@ -27,8 +27,8 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(UserBase):
-    email: Optional[EmailStr] = None
-    name: Optional[str] = None
+    email: EmailStr | None = None
+    name: str | None = None
 
 
 class UserOut(UserBase):
@@ -67,11 +67,12 @@ class SpotOut(Spot):
 
 
 class SpotUpdate(BaseModel):
-    latitude: Optional[Latitude] = None  # first - szerokosc
-    longitude: Optional[Longitude] = None  # second - dlugosc
-    name: Optional[str] = Field(None, min_length=2)
-    country: Optional[CountryShortName] = None
+    latitude: Latitude | None = None  # first - szerokosc
+    longitude: Longitude | None = None  # second - dlugosc
+    name: str | None = Field(None, min_length=2)
+    country: CountryShortName | None = None
 
 
+# think if it shoudn't be an empty list instead + change output in routes
 class UserWithSpots(UserOut):
-    spots: Optional[list[SpotOut]]
+    spots: list[SpotOut] | None

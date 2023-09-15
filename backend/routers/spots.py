@@ -1,12 +1,12 @@
 from typing import Annotated
 
-from fastapi import APIRouter, status, HTTPException, Depends, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
+from .. import models, oauth2, schemas
 from ..database import get_db
-from .. import models, schemas, oauth2
 
 router = APIRouter(prefix="/spots", tags=["Spots"])
 
@@ -17,25 +17,22 @@ CurrentUserDep = Annotated[models.User, Depends(oauth2.get_current_user)]
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=list[schemas.SpotOut])
 def get_spots(db: DbDep, current_user: CurrentUserDep):
-    spots = db.query(models.Spot).all()
-    return spots
+    return db.query(models.Spot).all()
 
 
 @router.get("/{id}", status_code=status.HTTP_200_OK, response_model=schemas.SpotOut)
 def get_one_spot(id: int, db: DbDep, current_user: CurrentUserDep):
-    spot = db.query(models.Spot).filter(models.Spot.id == id).first()
-    if not spot:
+    if spot := db.query(models.Spot).filter(models.Spot.id == id).first():
+        return spot
+    else:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Spot with ID {id} not found"
         )
-    return spot
 
 
 @router.post("/", response_model=schemas.SpotOut)
 def create_spot(spot_in: schemas.SpotIn, db: DbDep):
-    spot = db.query(models.Spot).filter(models.Spot.name == spot_in.name).first()
-
-    if spot:
+    if db.query(models.Spot).filter(models.Spot.name == spot_in.name).first():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Spot with {spot_in.name} already exists",
@@ -50,7 +47,7 @@ def create_spot(spot_in: schemas.SpotIn, db: DbDep):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Spot named {spot_in.name} already exists",
-        )
+        ) from e
 
     return new_spot
 
@@ -95,11 +92,11 @@ def update_spot(id: int, new_spot: schemas.SpotUpdate, db: DbDep):
     try:
         db.commit()
         db.refresh(spot)
-    except IntegrityError:
+    except IntegrityError as e:
         db.rollback()
 
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Spot with this data already exists",
-        )
+        ) from e
     return spot

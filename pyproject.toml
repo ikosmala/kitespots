@@ -19,7 +19,26 @@ pycountry = "^22.3.5"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
+ruff = "^0.0.289"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+
+[tool.ruff]
+select = [
+    
+    "E",  # pycodestyle
+    "F",  # pyflakes
+    "ISC",  # implicit string concatenation
+    "UP",  # alert you when better syntax is available in your python version
+    "RUF",  # the ruff developer's own rules
+    "C4",
+    "TCH",
+    "SIM"
+]
+target-version = "py311"
+show-fixes= true

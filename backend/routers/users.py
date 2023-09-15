@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Response, status, HTTPException, Depends
-from .. import models, schemas, utils, oauth2
-from ..database import get_db
-from sqlalchemy.orm import Session, selectinload
-from sqlalchemy.exc import IntegrityError
-from fastapi.encoders import jsonable_encoder
 from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi.encoders import jsonable_encoder
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session, selectinload
+
+from .. import models, oauth2, schemas, utils
+from ..database import get_db
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -18,9 +20,7 @@ def create_user(user: schemas.UserCreate, db: DbDep):
     """
     Create a new user in the database.
     """
-    find_user = db.query(models.User).filter(models.User.email == user.email).first()
-
-    if find_user:
+    if db.query(models.User).filter(models.User.email == user.email).first():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"User with {user.email} already exists",
@@ -28,7 +28,8 @@ def create_user(user: schemas.UserCreate, db: DbDep):
 
     user.password = utils.get_password_hash(user.password)
     new_user = models.User(**user.model_dump())
-    # try block with catching exception if someone added user with same credentials after initial check
+    # try block with catching exception
+    # if someone added user with same credentials after initial check
     try:
         db.add(new_user)
         db.commit()
@@ -38,7 +39,7 @@ def create_user(user: schemas.UserCreate, db: DbDep):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"User with {user.email} already exists",
-        )
+        ) from e
 
     return new_user
 
@@ -59,14 +60,13 @@ def get_user_spots(db: DbDep, user_auth: CurrentUserDep):
 @router.get("/{id}", response_model=schemas.UserOut)
 def get_one_user(id: int, db: DbDep):
     """Get information about user by ID."""
-    user = db.query(models.User).filter(models.User.id == id).first()
-
-    if not user:
+    if user := db.query(models.User).filter(models.User.id == id).first():
+        return user
+    else:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User with ID {id} not found in database.",
         )
-    return user
 
 
 @router.get("/", response_model=list[schemas.UserOut])
@@ -74,12 +74,12 @@ def get_all_active_users(db: DbDep):
     """
     Get all active users.
     """
-    users = db.query(models.User).filter(models.User.active == True).all()
-    if not users:
+    if users := db.query(models.User).filter(models.User.active == True).all():
+        return users
+    else:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="No users found in database"
         )
-    return users
 
 
 @router.delete("/{id}")
@@ -125,7 +125,7 @@ def update_user(id: int, new_user: schemas.UserUpdate, db: DbDep):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="User with this data already exists",
-        )
+        ) from e
     return user
 
 
@@ -135,15 +135,18 @@ def add_spot_to_user(id: int, db: DbDep, user_auth: CurrentUserDep):
     """
     Adds a spot to the user's list of spots.
 
-    This function looks up a spot by its ID and associates it with the authenticated user.
-    If the spot or user does not exist, or if the user is already associated with the spot,
+    This function looks up a spot by its ID
+    and associates it with the authenticated user.
+    If the spot or user does not exist,
+    or if the user is already associated with the spot,
     an HTTPException is raised.
 
     Parameters:
     - id (int): The ID of the spot to be added.
 
     Returns:
-    - Response: An HTTP 201 Created status code if the spot is successfully added to the user.
+    - Response: An HTTP 201 Created status code
+    if the spot is successfully added to the user.
 
     Exceptions:
     - HTTPException: 404 if the spot with the given ID does not exist.
@@ -156,14 +159,13 @@ def add_spot_to_user(id: int, db: DbDep, user_auth: CurrentUserDep):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Spot with id {id} do not exist",
         )
-    user_spot_check = (
+    if (
         db.query(models.User)
         .join(models.UserSpots)
         .join(models.Spot)
         .filter(models.User.id == user_auth.id, models.Spot.id == id)
         .first()
-    )
-    if user_spot_check:
+    ):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"User with id {user_auth.id} is already added to spot with id {id}",
@@ -176,5 +178,5 @@ def add_spot_to_user(id: int, db: DbDep, user_auth: CurrentUserDep):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"User with id {user_auth.id} is already added to spot with id {id}",
-        )
+        ) from e
     return Response(status_code=status.HTTP_201_CREATED)

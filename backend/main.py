@@ -1,8 +1,6 @@
 from fastapi import FastAPI
 from .routers import users, auth, spots
 from fastapi.middleware.cors import CORSMiddleware
-from . import models
-from .database import engine
 
 # done by alembic
 # models.Base.metadata.create_all(bind=engine)

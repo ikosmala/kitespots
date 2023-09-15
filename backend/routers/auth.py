@@ -1,9 +1,10 @@
 from typing import Annotated
 
-from fastapi import APIRouter, status, HTTPException, Depends
-from sqlalchemy.orm import Session
-from .. import oauth2, schemas, models, database, utils
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
+
+from .. import database, models, oauth2, schemas, utils
 
 router = APIRouter(tags=["Authentification"])
 
@@ -33,5 +34,4 @@ def login(
             "user_email": user.email,
         }
     )
-    token = schemas.Token(access_token=access_token, token_type="bearer")
-    return token
+    return schemas.Token(access_token=access_token, token_type="bearer")
